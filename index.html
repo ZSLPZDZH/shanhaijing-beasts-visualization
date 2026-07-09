@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>《山海经》神兽图谱 · 可视化</title>
+<style>
+  :root{
+    --paper:#f5efe1; --paper2:#efe6d2; --ink:#2b2620; --ink2:#5b5247;
+    --line:#d8cdb4; --gold:#b8860b; --gold2:#c8a45c;
+    --rui:#2e8b6f; --xiong:#c0392b; --yi:#2e6f95;
+    --shadow:0 6px 22px rgba(60,45,20,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #fbf6ea 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, #f0e7d4 0%, transparent 55%),
+      var(--paper);
+    color:var(--ink); line-height:1.6; padding-bottom:60px;
+  }
+  .serif{font-family:"Noto Serif SC","Songti SC","STSong",serif;}
+  /* HERO */
+  header.hero{
+    max-width:1120px;margin:0 auto;padding:54px 24px 22px;text-align:center;position:relative;
+  }
+  .hero .seal{
+    display:inline-block;font-size:13px;letter-spacing:.3em;color:var(--gold);
+    border:1px solid var(--gold2);border-radius:30px;padding:5px 16px;margin-bottom:18px;
+    background:rgba(184,134,11,.06);
+  }
+  .hero h1{font-size:clamp(30px,6vw,52px);font-weight:800;letter-spacing:.06em;}
+  .hero h1 .accent{color:var(--gold);}
+  .hero p.sub{color:var(--ink2);margin-top:12px;font-size:16px;}
+  .stats{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:26px;}
+  .stat{
+    background:linear-gradient(160deg,#fffdf7,#f3ead6);border:1px solid var(--line);
+    border-radius:16px;padding:16px 22px;min-width:128px;box-shadow:var(--shadow);
+  }
+  .stat .n{font-size:30px;font-weight:800;color:var(--ink);line-height:1;}
+  .stat .n small{font-size:14px;color:var(--ink2);font-weight:600}
+  .stat .l{font-size:13px;color:var(--ink2);margin-top:6px;letter-spacing:.05em}
+  .stat.k{border-color:var(--gold2)}
+  .stat.k .n{color:var(--gold)}
+  /* CHARTS */
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px;}
+  .panels{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;margin-top:14px;}
+  @media(max-width:820px){.panels{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(160deg,#fffdf7,#f6eedb);border:1px solid var(--line);
+    border-radius:18px;padding:20px 22px;box-shadow:var(--shadow);}
+  .panel h3{font-size:16px;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .panel h3 .dot{width:9px;height:9px;border-radius:50%;background:var(--gold)}
+  .panel .hint{font-size:12.5px;color:var(--ink2);margin-bottom:10px}
+  svg{width:100%;display:block;overflow:visible}
+  .legend{display:flex;gap:16px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2)}
+  .legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .bar-lab{font-size:11px;fill:var(--ink2)}
+  .bar-val{font-size:11px;fill:var(--ink);font-weight:700}
+  /* CONTROLS */
+  .controls{position:sticky;top:0;z-index:20;background:rgba(245,239,225,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+    margin-top:26px;padding:14px 0;}
+  .controls .inner{max-width:1120px;margin:0 auto;padding:0 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .tab{border:1px solid var(--line);background:#fffdf7;color:var(--ink2);
+    padding:7px 16px;border-radius:30px;cursor:pointer;font-size:14px;font-weight:600;transition:.18s}
+  .tab:hover{border-color:var(--gold2)}
+  .tab.active{background:var(--ink);color:#fbf6ea;border-color:var(--ink)}
+  .tab[data-c="瑞兽"].active{background:var(--rui);border-color:var(--rui)}
+  .tab[data-c="凶兽"].active{background:var(--xiong);border-color:var(--xiong)}
+  .tab[data-c="异兽"].active{background:var(--yi);border-color:var(--yi)}
+  .search{flex:1;min-width:180px;display:flex;align-items:center;gap:8px;
+    background:#fffdf7;border:1px solid var(--line);border-radius:30px;padding:7px 16px}
+  .search input{border:none;outline:none;background:transparent;flex:1;font-size:14px;color:var(--ink)}
+  select.vol{border:1px solid var(--line);background:#fffdf7;border-radius:30px;padding:7px 14px;font-size:14px;color:var(--ink2);outline:none;cursor:pointer}
+  .count-line{text-align:center;color:var(--ink2);font-size:13px;margin:16px 0 4px}
+  .count-line b{color:var(--ink)}
+  /* CARDS */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:16px;margin-top:8px}
+  .card{position:relative;background:#fffdf7;border:1px solid var(--line);border-radius:15px;
+    padding:16px 16px 14px;cursor:pointer;transition:.18s;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--c)}
+  .card:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:var(--gold2)}
+  .card .nm{font-size:22px;font-weight:800;letter-spacing:.04em}
+  .card .py{font-size:12.5px;color:var(--ink2);margin:2px 0 10px;font-style:italic}
+  .card .pt{font-size:13px;color:var(--ink2);line-height:1.55;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .tag{position:absolute;right:12px;top:13px;font-size:11px;font-weight:700;color:#fff;
+    background:var(--c);border-radius:20px;padding:2px 9px}
+  /* MODAL */
+  .mask{position:fixed;inset:0;background:rgba(40,30,15,.5);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .mask.show{display:flex}
+  .modal{background:linear-gradient(165deg,#fffdf7,#f3ead6);border:1px solid var(--gold2);
+    border-radius:20px;max-width:560px;width:100%;max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(40,30,15,.4)}
+  .modal .mh{padding:22px 26px 14px;border-bottom:1px dashed var(--line);position:relative}
+  .modal .mh .nm{font-size:30px;font-weight:800}
+  .modal .mh .py{color:var(--ink2);font-style:italic;font-size:14px}
+  .modal .mh .tag2{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:#fff;
+    background:var(--c);border-radius:20px;padding:3px 11px;margin-right:8px}
+  .modal .mh .vol{display:inline-block;margin-top:8px;font-size:12px;color:var(--ink2);
+    background:rgba(184,134,11,.1);border:1px solid var(--gold2);border-radius:20px;padding:3px 11px}
+  .modal .mb{padding:18px 26px 26px}
+  .modal .row{margin-bottom:16px}
+  .modal .row .k{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--gold);margin-bottom:5px}
+  .modal .row .v{font-size:14.5px;color:var(--ink);line-height:1.7}
+  .modal .row .v.ori{background:rgba(46,111,149,.06);border-left:3px solid var(--yi);padding:10px 12px;border-radius:6px;font-family:"Noto Serif SC",serif}
+  .close{position:absolute;right:18px;top:18px;width:32px;height:32px;border-radius:50%;
+    border:1px solid var(--line);background:#fffdf7;cursor:pointer;font-size:18px;color:var(--ink2);line-height:1}
+  .close:hover{background:var(--ink);color:#fff}
+  footer{max-width:1120px;margin:40px auto 0;padding:20px 24px;text-align:center;color:var(--ink2);font-size:12.5px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="seal serif">山 海 经 · 神 兽 图 谱</div>
+  <h1 class="serif">《山海经》<span class="accent">神兽</span>可视化图谱</h1>
+  <p class="sub">原典十八卷神兽名录的三重视角 · 精简 / 分类 / 全本，实体完全一致</p>
+  <div class="stats">
+    <div class="stat k"><div class="n" id="s-entries">0</div><div class="l">名录条目</div></div>
+    <div class="stat k"><div class="n" id="s-beasts">0<small> 只</small></div><div class="l">计神兽（含双鸟）</div></div>
+    <div class="stat"><div class="n" style="color:var(--rui)" id="s-rui">0</div><div class="l">瑞兽</div></div>
+    <div class="stat"><div class="n" style="color:var(--xiong)" id="s-xiong">0</div><div class="l">凶兽</div></div>
+    <div class="stat"><div class="n" style="color:var(--yi)" id="s-yi">0</div><div class="l">异兽</div></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="panels">
+    <div class="panel">
+      <h3><span class="dot"></span>按卷分布 · 十八卷收录数量</h3>
+      <div class="hint">精简名录按原典十八卷顺序编排，各卷神兽条目数</div>
+      <div id="barChart"></div>
+    </div>
+    <div class="panel">
+      <h3><span class="dot"></span>按吉凶分类 · 瑞 / 凶 / 异</h3>
+      <div class="hint">分类名录以神兽属性重排</div>
+      <div id="donutChart"></div>
+      <div class="legend">
+        <span><i style="background:var(--rui)"></i>瑞兽 <b id="lg-rui">0</b></span>
+        <span><i style="background:var(--xiong)"></i>凶兽 <b id="lg-xiong">0</b></span>
+        <span><i style="background:var(--yi)"></i>异兽 <b id="lg-yi">0</b></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="inner">
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-c="全部">全部</div>
+      <div class="tab" data-c="瑞兽">瑞兽</div>
+      <div class="tab" data-c="凶兽">凶兽</div>
+      <div class="tab" data-c="异兽">异兽</div>
+    </div>
+    <select class="vol" id="volSel"><option value="">全部卷次</option></select>
+    <div class="search">🔍<input id="q" placeholder="搜索神兽名 / 拼音 / 要点…"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="count-line" id="countLine"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<footer>
+  数据整理自飞书文档《山海经》神兽三套名录（精简 / 分类 / 全本），计数已校订对齐：三表各 151 条，① 因「青鴍、黄鷔」合占 1 条编号实为 2 只，计 152 只。
+</footer>
+
+<div class="mask" id="mask">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+const DATA = {"total_entries": 151, "total_beasts": 152, "volumes": [{"name": "一、南山经", "count": 22}, {"name": "二、西山经", "count": 34}, {"name": "三、北山经", "count": 30}, {"name": "四、东山经", "count": 15}, {"name": "五、中山经", "count": 13}, {"name": "六、海外四经", "count": 11}, {"name": "七、海内四经", "count": 9}, {"name": "八、大荒四经", "count": 13}, {"name": "九、海内经", "count": 4}], "categories": {"瑞兽": 44, "凶兽": 46, "异兽": 61}, "beasts": [{"name": "鹿蜀", "pinyin": "lù shǔ", "point": "栖息杻阳山，马形白首，皮毛带虎纹、尾赤红，叫声如歌，佩戴其皮毛可旺子孙。", "category": "瑞兽", "volume": "一、南山经", "original": "又东三百七十里，曰杻阳之山……有兽焉，其状如马而白首，其文如虎而赤尾，其音如谣，其名曰鹿蜀，佩之宜子孙。", "explain": "上古祥瑞之兽，外形是白首赤尾的虎纹马，叫声悠扬如歌，被古人视为多子多福的象征，佩戴其皮毛有祈福子孙繁衍的寓意。"}, {"name": "旋龟", "pinyin": "xuán guī", "point": "栖息怪水，龟身鸟头蛇尾，叫声如劈木，佩戴可防耳聋，甲壳可凿刻硬物。", "category": "瑞兽", "volume": "一、南山经", "original": "怪水出焉，而东流注于宪翼之水。其中多玄龟，其状如龟而鸟首虺尾，其名曰旋龟，其音如判木，佩之不聋，可以为底。", "explain": "一种水陆两栖的神异龟类，鸟头蛇尾，甲壳坚硬，既是上古巫医用来治耳疾的灵物，也是工匠加工玉石的工具材料。"}, {"name": "类", "pinyin": "lèi", "point": "栖息亶爰山，形似长鬃野猫，雌雄同体可自行繁育，食其肉能消解妒忌心。", "category": "瑞兽", "volume": "一、南山经", "original": "又东四百里，曰亶爰之山，多水，无草木，不可以上。有兽焉，其状如狸而有髦，其名曰类，自为牝牡，食者不妒。", "explain": "上古传说中的“自孕之兽”，外形像长鬃毛的野猫，无需交配即可繁殖，被认为能消解人的妒忌执念，是平和心性的象征。"}, {"name": "猼訑", "pinyin": "bó yí", "point": "栖息基山，羊形九尾四耳，眼睛长在背上，佩戴其皮毛可使人无所畏惧。", "category": "瑞兽", "volume": "一、南山经", "original": "又东三百里，曰基山，其阳多玉，其阴多怪木。有兽焉，其状如羊，九尾四耳，其目在背，其名曰猼訑，佩之不畏。", "explain": "形态怪异的山中异兽，眼睛长在背上能洞察四周，皮毛有“壮胆”的神效，古人出行佩戴它以辟邪驱惧。"}, {"name": "𪁺𩿧", "pinyin": "chǎng fū", "point": "栖息基山，形似鸡，三头六目六足三翼，食其肉可精力旺盛、减少睡眠。", "category": "瑞兽", "volume": "一、南山经", "original": "有鸟焉，其状如鸡而三首、六目、六足、三翼，其名曰𪁺𩿧，食之无卧。", "explain": "一种多目多足的奇鸟，感官敏锐、精力极强，上古被视作“提神药”，食用后能长时间保持清醒不困倦。"}, {"name": "灌灌", "pinyin": "guàn guàn", "point": "栖息青丘山，形似斑鸠，叫声如人呵斥，佩戴其羽毛可神志清醒、不被迷惑。", "category": "瑞兽", "volume": "一、南山经", "original": "有鸟焉，其状如鸠，其音若呵，名曰灌灌，佩之不惑。", "explain": "一种鸣声凌厉的鸠类异鸟，古人认为佩戴它的羽毛能坚定心智，不受外界蛊惑，是“醒神辟邪”的灵禽。"}, {"name": "赤鱬", "pinyin": "chì rú", "point": "栖息英水泽，鱼身人面，叫声如鸳鸯，食其肉可防治疥疮等皮肤病。", "category": "瑞兽", "volume": "一、南山经", "original": "英水出焉，南流注于即翼之泽。其中多赤鱬，其状如鱼而人面，其音如鸳鸯，食之不疥。", "explain": "上古人鱼的一种，鱼身人脸，生活在南方水泽中，其肉被认为有润肤疗疮的药用价值，是最早的“人面鱼”形象原型。"}, {"name": "凤凰", "pinyin": "fèng huáng", "point": "栖息丹穴山，形似鸡，全身带五彩德义礼仁信纹路，出现则天下安宁太平。", "category": "瑞兽", "volume": "一、南山经", "original": "又东五百里，曰丹穴之山，其上多金玉。丹水出焉，而南流注于渤海。有鸟焉，其状如鸡，五采而文，名曰凤凰，首文曰德，翼文曰义，背文曰礼，膺文曰仁，腹文曰信。是鸟也，饮食自然，自歌自舞，见则天下安宁。", "explain": "上古第一瑞鸟，是仁德与太平的象征，天生自带仁义礼智信五种德行纹路，它的出现预示着世道清明、天下安宁。"}, {"name": "虎蛟", "pinyin": "hǔ jiāo", "point": "栖息泿水入海处，鱼身蛇尾，叫声如鸳鸯，食其肉可消水肿、治痔疮。", "category": "瑞兽", "volume": "一、南山经", "original": "泿水出焉，而南流注于海。其中有虎蛟，其状鱼身而蛇尾，其音如鸳鸯，食者不肿，可以已痔。", "explain": "上古水族异兽，属于蛟类的一种，鱼身蛇尾，肉质有药用价值，能治疗水肿和肛肠疾病。"}, {"name": "羬羊", "pinyin": "qián yáng", "point": "栖息钱来山，羊身马尾，其油脂可治疗皮肤干裂。", "category": "瑞兽", "volume": "二、西山经", "original": "西山经华山之首，曰钱来之山，其上多松，其下多洗石。有兽焉，其状如羊而马尾，名曰羬羊，其脂可以已腊。", "explain": "一种马尾羊身的异兽，油脂滋润，是上古治疗皮肤皲裂的天然药材，多生活在西方高山地带。"}, {"name": "鴖", "pinyin": "mín", "point": "栖息符禺山，形似翠鸟、红嘴，饲养它可防御火灾。", "category": "瑞兽", "volume": "二、西山经", "original": "有鸟焉，其状如翠而赤喙，可以御火，名曰鴖。", "explain": "一种红嘴翠鸟，上古被视为防火灵禽，将它养在家中可避免火灾，是最早的“消防吉祥物”。"}, {"name": "肥遗（鸟）", "pinyin": "féi yí", "point": "栖息英山，形似鹌鹑，黄身红喙，食其肉可治麻风、杀体内寄生虫。", "category": "瑞兽", "volume": "二、西山经", "original": "又西七十里，曰英山，其上多杻橿，其阴多铁，其阳多赤金。有鸟焉，其状如鹑，黄身而赤喙，其名曰肥遗，食之已疠，可以杀虫。", "explain": "一种药用价值极高的异鸟，黄身红嘴，可治疗恶疾、驱虫，与蛇形肥遗同名异物。"}, {"name": "橐𩇯", "pinyin": "tuó féi", "point": "栖息羭次山，形似猫头鹰，人面独足，冬出夏蛰，佩戴其羽毛可防雷击。", "category": "瑞兽", "volume": "二、西山经", "original": "有鸟焉，其状如枭，人面而一足，曰橐𩇯，冬见夏蛰，服之不畏雷。", "explain": "一种独足人面的奇鸟，有冬眠习性，古人认为它有避雷的神力，佩戴其羽毛可在雷雨天保平安。"}, {"name": "朏朏", "pinyin": "fěi fěi", "point": "栖息嶓冢山，形似白尾野猫，颈有鬃毛，饲养它可消解忧愁。", "category": "瑞兽", "volume": "二、西山经", "original": "又西三百二十里，曰嶓冢之山……有兽焉，其状如狸，而白尾有鬣，名曰朏朏，养之可以已忧。", "explain": "一种温顺可爱的异兽，外形像白尾野猫，性情灵动，古人将其当作宠物饲养，用以排遣烦闷、治愈情绪。"}, {"name": "数斯", "pinyin": "shù sī", "point": "栖息皋涂山，形似猫头鹰、长人脚，食其肉可治甲状腺肿大。", "category": "瑞兽", "volume": "二、西山经", "original": "有鸟焉，其状如鸱而人足，名曰数斯，食之已瘿。", "explain": "一种长人脚的猛禽，肉质有治疗甲状腺肿大的功效，是上古巫医常用的药用禽鸟。"}, {"name": "鸾鸟", "pinyin": "luán niǎo", "point": "栖息女床山，形似野鸡、身披五彩纹，出现则天下安宁。", "category": "瑞兽", "volume": "二、西山经", "original": "西南三百里，曰女床之山，其阳多赤铜，其阴多石涅。有兽焉，其状如翟而五采文，名曰鸾鸟，见则天下安宁。", "explain": "与凤凰齐名的瑞鸟，羽毛五彩斑斓，是太平盛世的象征，传说它的鸣声如乐曲，悦耳动听。"}, {"name": "蛫", "pinyin": "guǐ", "point": "栖息厎阳山，龟形白身红首，可用于防御火灾。", "category": "瑞兽", "volume": "二、西山经", "original": "又西五百里，曰厎阳之山……有兽焉，其状如龟，而白身赤首，名曰蛫，是可以御火。", "explain": "一种白身红首的异龟，防火灵物，古人将其供奉在家中，用以震慑火患、护佑宅第平安。"}, {"name": "文鳐鱼", "pinyin": "wén yáo yú", "point": "栖息观水，鲤鱼身鸟翼，苍纹白头红嘴，夜间可跨海飞行，食之可治癫狂。", "category": "瑞兽", "volume": "二、西山经", "original": "又西百八十里，曰泰器之山。观水出焉，西流注于流沙。是多文鳐鱼，状如鲤鱼，鱼身而鸟翼，苍文而白首赤喙，常行西海，游于东海，以夜飞。其音如鸾鸡，其味酸甘，食之已狂。", "explain": "一种会飞的神鱼，鱼身鸟翼，能跨越大海迁徙，肉质酸甜，有安神定志、治疗精神疾病的功效。"}, {"name": "讙", "pinyin": "huān", "point": "栖息翼望山，狸形一目三尾，能模仿百种声音，可御凶邪，食之治黄疸。", "category": "瑞兽", "volume": "二、西山经", "original": "西次三经之首，曰翼望之山……有兽焉，其状如狸，一目而三尾，名曰讙，其音如夺百声，是可以御凶，服之已瘅。", "explain": "擅长拟声的异兽，能模仿百种声音迷惑敌人，既能辟邪挡灾，其肉又能治疗黄疸，是兼具实用与神异的灵兽。"}, {"name": "鵸鵌（西山经版）", "pinyin": "qí tú", "point": "栖息翼望山，乌形三头六尾，善发笑，佩戴可防梦魇、御凶邪。", "category": "瑞兽", "volume": "二、西山经", "original": "有鸟焉，其状如乌，三首六尾而善笑，名曰鵸鵌，服之使人不厌，又可以御凶。", "explain": "三头六尾的奇鸟，笑声诡异，古人认为佩戴它的羽毛能远离噩梦、镇压邪祟，是辟邪安神的灵禽。"}, {"name": "驳", "pinyin": "bó", "point": "栖息中曲山，马形白身黑尾，独角，虎牙虎爪，叫声如擂鼓，食虎豹，可御兵灾。", "category": "瑞兽", "volume": "二、西山经", "original": "又西三百里，曰中曲之山……有兽焉，其状如马，而白身黑尾，一角，虎牙爪，音如鼓音，其名曰驳，是食虎豹，可以御兵。", "explain": "威猛的独角瑞兽，外形像长虎牙的独角马，以虎豹为食，战力极强，古人认为饲养它能抵御战乱、保一方平安。"}, {"name": "䑏疏", "pinyin": "huān shū", "point": "栖息带山，马形独角，角带锉纹，可辟除火灾。", "category": "瑞兽", "volume": "三、北山经", "original": "北山经之首，曰单狐之山……又北三百里，曰带山……有兽焉，其状如马，一角有错，其名曰䑏疏，可以辟火。", "explain": "一种独角马形异兽，角上有凹凸纹理，是防火灵兽，饲养它可避免火灾侵扰。"}, {"name": "孟槐", "pinyin": "mèng huái", "point": "栖息谯明山，豪猪形红硬毛，叫声如“榴榴”，可抵御凶邪。", "category": "瑞兽", "volume": "三、北山经", "original": "又北四百里，曰谯明之山……有兽焉，其状如貆而赤毫，其音如榴榴，名曰孟槐，可以御凶。", "explain": "红毛豪猪形异兽，硬毛赤红，性情凶悍，古人认为它能震慑邪祟，是北方山林的辟邪灵兽。"}, {"name": "何罗鱼", "pinyin": "hé luó yú", "point": "栖息谯水，一首十身，叫声如狗吠，食之可治痈疮。", "category": "瑞兽", "volume": "三、北山经", "original": "谯水出焉，西流注于河。其中多何罗之鱼，一首而十身，其音如吠犬，食之已痈。", "explain": "一首十身的怪鱼，身体分叉繁多，肉质有消肿解毒的功效，能治疗恶疮痈肿。"}, {"name": "耳鼠", "pinyin": "ěr shǔ", "point": "栖息丹熏山，鼠形兔头麋身，靠尾巴飞行，食之防腹胀、解百毒。", "category": "瑞兽", "volume": "三、北山经", "original": "又北二百八十里，曰丹熏之山……有兽焉，其状如鼠，而菟首麋身，其音如獆犬，以其尾飞，名曰耳鼠，食之不䐆，又可以御百毒。", "explain": "会飞的奇异鼠类，靠尾巴滑翔，是天然的解毒药，食用后能抵御各种毒素，还能调理肠胃。"}, {"name": "鵸鵌（北山经版）", "pinyin": "qí tú", "point": "栖息带山，乌形五彩红纹，雌雄同体，食之不生毒疮。", "category": "瑞兽", "volume": "二、西山经", "original": "有鸟焉，其状如乌，三首六尾而善笑，名曰鵸鵌，服之使人不厌，又可以御凶。", "explain": "三头六尾的奇鸟，笑声诡异，古人认为佩戴它的羽毛能远离噩梦、镇压邪祟，是辟邪安神的灵禽。"}, {"name": "儵鱼", "pinyin": "tiáo yú", "point": "栖息芘湖，鸡形红毛，三尾六足四首，叫声如鹊，食之可消解忧愁。", "category": "瑞兽", "volume": "三、北山经", "original": "彭水出焉，而西流注于芘湖之水，其中多儵鱼，其状如鸡而赤毛，三尾六足四首，其音如鹊，食之可以已忧。", "explain": "形态怪异的多首异鱼，外形像红毛鸡，有安神解忧的功效，吃了能让人心情舒畅、忘却烦恼。"}, {"name": "白鵺", "pinyin": "bái yè", "point": "栖息单张山，雉形花首白翼黄脚，食之治咽喉痛、疗痴呆。", "category": "瑞兽", "volume": "三、北山经", "original": "有鸟焉，其状如雉，而文首、白翼、黄足，名曰白鵺，食之已嗌痛，可以已痸。", "explain": "一种药用异鸟，能治疗咽喉疾病和神志不清，是北方山林中的珍稀药用禽类。"}, {"name": "䲃鱼", "pinyin": "zǎo yú", "point": "栖息瀤泽，鲤形鸡足，食之可去除皮肤疣子。", "category": "瑞兽", "volume": "三、北山经", "original": "又北二百里，曰狱法之山。瀤泽之水出焉，而东北流注于泰泽。其中多䲃鱼，其状如鲤而鸡足，食之已疣。", "explain": "一种长鸡爪的鲤鱼，肉质有去除皮肤赘疣的功效，是治疗皮肤病的药用鱼类。"}, {"name": "人鱼", "pinyin": "rén yú", "point": "栖息决决水，鲇形四足，叫声如婴儿啼哭，食之可预防痴呆。", "category": "瑞兽", "volume": "三、北山经", "original": "又东北二百里，曰龙侯之山，无草木，多金玉。决决之水出焉，而东流注于河。其中多人鱼，其状如䱱鱼，四足，其音如婴儿，食之无痴疾。", "explain": "上古大鲵的神异化形象，四足两栖，叫声如婴儿啼哭，其肉有健脑益智的功效，能预防神志痴傻。"}, {"name": "鶌鶋", "pinyin": "qū jū", "point": "栖息马成山，乌形白头青身黄脚，食之耐饥饿、治健忘。", "category": "瑞兽", "volume": "三、北山经", "original": "有鸟焉，其状如乌，首白而身青、足黄，是名曰鶌鶋，其名自詨，食之不饥，可以已寓。", "explain": "一种药用异鸟，吃了能长时间不饿，还能增强记忆力，是上古远行、修道者青睐的灵禽。"}, {"name": "领胡", "pinyin": "lǐng hú", "point": "栖息阳山，牛形赤尾，颈有肉瘤，食之可治癫狂病。", "category": "瑞兽", "volume": "三、北山经", "original": "又东三百里，曰阳山……有兽焉，其状如牛而赤尾，其颈腎，其状如句瞿，其名曰领胡，其鸣自詨，食之已狂。", "explain": "一种颈部长肉瘤的红牛，肉质有安神定惊的功效，能治疗狂躁类精神疾病。"}, {"name": "䱤父鱼", "pinyin": "xiàn fù yú", "point": "栖息留水，鱼头猪身，食之可止呕吐。", "category": "瑞兽", "volume": "三、北山经", "original": "留水出焉，而南流注于河。其中有䱤父之鱼，其状如鲋鱼，鱼首而彘身，食之已呕。", "explain": "一种鱼头猪身的怪鱼，肉质有止呕和胃的功效，是治疗肠胃疾病的药用鱼类。"}, {"name": "飞鱼", "pinyin": "fēi yú", "point": "栖息劳水，形似鲫鱼，食之可治痔疮、脱肛。", "category": "瑞兽", "volume": "五、中山经", "original": "又北三十里，曰牛首之山。劳水出焉，而西流注于潏水。是多飞鱼，其状如鲋鱼，食之已痔衕。", "explain": "一种药用鱼类，外形与普通鲫鱼相似，但能跃出水面滑翔，对肛肠疾病有特殊疗效。"}, {"name": "鸰䳩", "pinyin": "líng yāo", "point": "栖息廆山，山鸡形长尾赤身青喙，佩戴可防梦魇。", "category": "瑞兽", "volume": "五、中山经", "original": "又西十里，曰廆山……有鸟焉，其状如山鸡，长尾，赤如丹火，青喙，名曰鸰䳩，其鸣自呼，服之不眯。", "explain": "长尾红羽的美丽异鸟，羽毛鲜红似火，古人佩戴其羽毛可安神避魇、远离噩梦。"}, {"name": "䲩", "pinyin": "tí", "point": "栖息泰室山，白身赤喙红眼，食之可防噩梦。", "category": "瑞兽", "volume": "五、中山经", "original": "又北三十里，曰泰室之山……有鸟焉，其状如鸟，而白身、赤喙、赤目、白毛，其名曰䲩，食之不眯。", "explain": "一种白色的异鸟，肉质有安神助眠的功效，吃了以后不会做噩梦。"}, {"name": "当康", "pinyin": "dāng kāng", "point": "栖息钦山，猪形长獠牙，出现则天下五谷丰登。", "category": "瑞兽", "volume": "四、东山经", "original": "又东南二百里，曰钦山……有兽焉，其状如豚而有牙，其名曰当康，其鸣自叫，见则天下大穰。", "explain": "上古瑞兽，外形像长牙小猪，它的出现预示着五谷丰登、粮食满仓，是丰收年景的象征。"}, {"name": "乘黄", "pinyin": "chéng huáng", "point": "马形背生角，骑乘它可增寿至两千岁。", "category": "瑞兽", "volume": "六、海外四经", "original": "白民之国在龙鱼北，白身被发。有乘黄，其状如马，其背上有角，乘之寿二千岁。", "explain": "上古长寿瑞兽，外形像背生角的马，是延年益寿的象征，骑乘它可获得极长的寿命。"}, {"name": "驺吾", "pinyin": "zōu wú", "point": "林氏国瑞兽，虎形五彩皮毛，尾长过身，骑之日行千里，性仁不食活物。", "category": "瑞兽", "volume": "七、海内四经", "original": "林氏国有珍兽，大若虎，五采毕具，尾长于身，名曰驺吾，乘之日行千里。", "explain": "上古仁兽，五彩皮毛，尾长过身，天性仁慈不食活物，奔跑速度极快，日行千里，是祥瑞与仁德的象征。"}, {"name": "开明兽", "pinyin": "kāi míng shòu", "point": "昆仑山守护神，虎身九首皆人面，镇守昆仑南门。", "category": "瑞兽", "volume": "七、海内四经", "original": "昆仑南渊深三百仞。开明兽身大类虎而九首，皆人面，东向立昆仑上。", "explain": "昆仑山的守门神兽，虎身九首，威严无比，日夜镇守天帝下都的南门，是天界门户的守卫者。"}, {"name": "英招", "pinyin": "yīng sháo", "point": "天帝园圃守护神，马身人面，虎纹鸟翼，巡行四海传达天帝旨意。", "category": "瑞兽", "volume": "二、西山经", "original": "又西三百二十里，曰槐江之山……实惟帝之平圃，神英招司之，其状马身而人面，虎文而鸟翼，徇于四海，其音如榴。", "explain": "天界的园林管理员，外形是带翅膀的虎纹人马，负责看管天帝的玄圃，同时也是天帝的信使，能飞越四海传递命令。"}, {"name": "陆吾", "pinyin": "lù wú", "point": "昆仑山守护神，虎身人面九尾，虎爪，掌管天界九域与天帝苑囿时序。", "category": "瑞兽", "volume": "二、西山经", "original": "西南四百里，曰昆仑之丘，是实惟帝之下都，神陆吾司之。其状虎身而九尾，人面而虎爪；是神也，司天之九部及帝之囿时。", "explain": "昆仑山的大管家，虎身九尾的天神，负责管理天帝在下界的都城，同时统辖天界的区域划分和苑囿时序。"}, {"name": "应龙", "pinyin": "yìng lóng", "point": "生翼神龙，助黄帝杀蚩尤、夸父，主司雨水，仿其形可求雨。", "category": "瑞兽", "volume": "八、大荒四经", "original": "应龙处南极，杀蚩尤与夸父，不得复上，故下数旱。旱而为应龙之状，乃得大雨。", "explain": "上古神龙，背生双翼，是黄帝的得力战将，曾斩杀蚩尤、夸父，后因神力耗损留在人间，是主司雨水的瑞龙。"}, {"name": "延维", "pinyin": "yán wéi", "point": "苗民所奉之神，人首蛇身双头，穿紫衣戴红帽，君主供奉可称霸天下。", "category": "瑞兽", "volume": "九、海内经", "original": "有人曰苗民。有神焉，人首蛇身，长如辕，左右有首，衣紫衣，冠旃冠，名曰延维，人主得而飨食之，伯天下。", "explain": "上古水神，双头蛇身，又称委蛇，是诸侯霸主的守护神，得到它的庇佑就能称霸天下、号令诸侯。"}, {"name": "九尾狐", "pinyin": "jiǔ wěi hú", "point": "栖息青丘山，狐身九尾，叫声如婴儿啼哭，会食人；人食其肉可抵御妖邪毒气。", "category": "凶兽", "volume": "一、南山经", "original": "又东三百里，曰青丘之山，其阳多玉，其阴多青雘。有兽焉，其状如狐而九尾，其音如婴儿，能食人，食者不蛊。", "explain": "《山海经》原生九尾狐并非后世祥瑞形象，而是会模仿婴儿哭声诱捕人的山中异兽，但其肉有辟邪解毒的功效，是兼具凶性与药用价值的灵兽。"}, {"name": "狸力", "pinyin": "lí lì", "point": "栖息柜山，猪身鸡爪，叫声如狗吠，出现则当地大兴土木、征发劳役。", "category": "凶兽", "volume": "一、南山经", "original": "南次二经之首，曰柜山，西临流黄，北望诸毗，东望长右。有兽焉，其状如豚，有距，其音如狗吠，其名曰狸力，见则其县多土功。", "explain": "一种猪身鸡爪的异兽，擅长掘土，是工程营建的预兆，它出现的地方往往会启动大型治水、筑城等土方工程。"}, {"name": "鴸", "pinyin": "zhū", "point": "栖息柜山，形似猫头鹰，爪如人手，叫声如呻吟，出现则当地贤士遭放逐。", "category": "凶兽", "volume": "一、南山经", "original": "有鸟焉，其状如鸱而人手，其音如痹，其名曰鴸，其名自号也，见则其县多放士。", "explain": "一种预兆政治动荡的凶鸟，外形像长人手的猫头鹰，传说它是上古丹朱所化，出现则意味着人才遭贬斥、朝政昏暗。"}, {"name": "长右", "pinyin": "cháng yòu", "point": "栖息长右山，四耳猿形，叫声如人呻吟，出现则当地爆发大水灾。", "category": "凶兽", "volume": "一、南山经", "original": "东南四百五十里，曰长右之山，无草木，多水。有兽焉，其状如禺而四耳，其名长右，其音如吟，见则郡县大水。", "explain": "一种四耳猿形异兽，是洪水的预兆，其叫声低沉如呻吟，传说它现身之处必然连降暴雨、引发洪涝。"}, {"name": "猾褢", "pinyin": "huá huái", "point": "栖息羽山，人形猪鬃，穴居冬眠，叫声如砍木，出现则当地有繁重徭役。", "category": "凶兽", "volume": "一、南山经", "original": "又东三百五十里，曰羽山，其下多水，其上多雨，无草木，多蝮虫。有兽焉，其状如人而彘鬣，穴居而冬蛰，其音如斫木，见则县有大繇。", "explain": "一种外形像人、长着猪鬃的穴居异兽，会冬眠，是劳役繁重的预兆，它出现则意味着当地百姓将被征发苦役。"}, {"name": "彘", "pinyin": "zhì", "point": "栖息浮玉山，虎身牛尾，叫声如狗叫，性情凶悍会食人。", "category": "凶兽", "volume": "一、南山经", "original": "又东五百里，曰浮玉之山……有兽焉，其状如虎而牛尾，其音如吠犬，其名曰彘，是食人。", "explain": "一种凶猛的食人异兽，虎身牛尾，性情凶悍，是南方山林中的顶级掠食者。"}, {"name": "蛊雕", "pinyin": "gǔ diāo", "point": "栖息滂水，雕身兽角，水陆两栖，叫声如婴儿啼哭，会食人。", "category": "凶兽", "volume": "一、南山经", "original": "又东五百里，曰鹿吴之山，上无草木，多金石。泽更之水出焉，而南流注于滂水。水有兽焉，名曰蛊雕，其状如雕而有角，其音如婴儿之音，是食人。", "explain": "一种水陆两栖的食人凶兽，外形像长角的大雕，擅长用婴儿哭声诱人靠近，是南方水泽中极具危险性的异兽。"}, {"name": "鱄鱼", "pinyin": "zhuān yú", "point": "栖息黑水，形似鲫鱼、长猪毛，叫声如猪，出现则天下大旱。", "category": "凶兽", "volume": "一、南山经", "original": "又东四百里，曰鸡山，其上多金，其下多丹雘。黑水出焉，而南流注于海。其中有鱄鱼，其状如鲋而彘毛，其音如豚，见则天下大旱。", "explain": "一种预兆旱灾的异鱼，鱼身猪毛，叫声如猪嚎，它现身的年份往往赤地千里、颗粒无收。"}, {"name": "颙", "pinyin": "yú", "point": "栖息令丘山，形似猫头鹰，人面四目有耳，出现则天下大旱。", "category": "凶兽", "volume": "一、南山经", "original": "又东四百里，曰令丘之山，无草木，多火。其南有谷焉，曰中谷，条风自是出。有鸟焉，其状如枭，人面四目而有耳，其名曰颙，其鸣自号也，见则天下大旱。", "explain": "人面四目的旱鸟，外形诡异，是极端干旱的凶兆，传说它一旦现身，就会引发连年大旱。"}, {"name": "肥𧒭", "pinyin": "féi yí", "point": "栖息太华山，蛇形六足四翼，出现则天下大旱。", "category": "凶兽", "volume": "二、西山经", "original": "又西六十里，曰太华之山，削成而四方，其高五千仞，其广十里，鸟兽莫居。有蛇焉，名曰肥𧒭，六足四翼，见则天下大旱。", "explain": "一种长翅膀的六足怪蛇，是大旱的凶兆，传说它从华山深穴中飞出时，天下就会迎来连年旱灾。"}, {"name": "钦原", "pinyin": "qīn yuán", "point": "栖息槐江山，巨型蜂类，大小如鸳鸯，毒性极强，蜇中鸟兽即死、树木即枯。", "category": "凶兽", "volume": "二、西山经", "original": "有鸟焉，其状如蜂，大如鸳鸯，名曰钦原，蠚鸟兽则死，蠚木则枯。", "explain": "剧毒无比的巨型蜂类，毒性极强，被它蜇到的生物无一存活，连树木都会枯死，是山林中的“剧毒杀手”。"}, {"name": "土蝼", "pinyin": "tǔ lóu", "point": "栖息昆仑山，四角羊形，性情凶悍会食人。", "category": "凶兽", "volume": "二、西山经", "original": "有兽焉，其状如羊而四角，名曰土蝼，是食人。", "explain": "昆仑山中的食人凶兽，外形像四角羊，性情凶悍，是闯入神山者的致命威胁。"}, {"name": "毕方", "pinyin": "bì fāng", "point": "栖息章莪山，独足鹤形，青身红斑白喙，出现则当地发生怪火。", "category": "凶兽", "volume": "二、西山经", "original": "有鸟焉，其状如鹤，一足，赤文青质而白喙，名曰毕方，其鸣自叫也，见则其邑有讹火。", "explain": "独足火鸟，是火灾的象征，传说它的出现会引发不明原因的怪火，上古被视为火兆凶鸟。"}, {"name": "穷奇（西山经版）", "pinyin": "qióng qí", "point": "栖息邽山，牛形，浑身刺猬般硬毛，叫声如狗吠，性情凶暴会食人。", "category": "凶兽", "volume": "二、西山经", "original": "又西二百六十里，曰邽山。其上有兽焉，其状如牛，猬毛，名曰穷奇，音如獆狗，是食人。", "explain": "上古四大凶兽之一，外形如牛、浑身钢毛，性情凶暴嗜杀，专门吞食好人，是邪恶与不义的象征。"}, {"name": "蠃鱼", "pinyin": "luǒ yú", "point": "栖息蒙水，鱼身鸟翼，叫声如鸳鸯，出现则当地发大水。", "category": "凶兽", "volume": "二、西山经", "original": "蒙水出焉，南流注于洋水，其中多黄贝、蠃鱼，鱼身而鸟翼，音如鸳鸯，见则其邑大水。", "explain": "一种长翅膀的飞鱼，是洪水的预兆，它从水中飞出时，当地就会爆发洪涝灾害。"}, {"name": "窫窳", "pinyin": "yà yǔ", "point": "栖息少咸山，牛形赤身人面马蹄，叫声如婴儿啼哭，会食人。", "category": "凶兽", "volume": "三、北山经", "original": "又北二百里，曰少咸之山……有兽焉，其状如牛，而赤身、人面、马足，名曰窫窳，其音如婴儿，是食人。", "explain": "上古著名食人凶兽，传说本是天神，被杀后复活化为凶兽，赤身人面，擅长用婴儿哭声诱人靠近。"}, {"name": "山𤟤", "pinyin": "shān huī", "point": "栖息狱法山，犬形人面，善投掷，见人就笑，行走如风，出现则天下刮大风。", "category": "凶兽", "volume": "三、北山经", "original": "有兽焉，其状如犬而人面，善投，见人则笑，其名山𤟤，其行如风，见则天下大风。", "explain": "一种人面犬身的风兽，行动快如疾风，它一出现就会狂风大作，传说它能投掷石块，还会用笑容迷惑路人。"}, {"name": "肥遗（蛇）", "pinyin": "féi yí", "point": "栖息浑夕山，蛇形一首两身，出现则国家大旱。", "category": "凶兽", "volume": "三、北山经", "original": "又北百八十里，曰浑夕之山……有蛇一首两身，名曰肥遗，见则其国大旱。", "explain": "双头身的怪蛇，是大旱的凶兆，它出现的地方会遭遇严重旱灾，与鸟形肥遗、肥𧒭同为旱兆神兽。"}, {"name": "狍鸮", "pinyin": "páo xiāo", "point": "栖息钩吾山，羊身人面，眼在腋下，虎齿人爪，叫声如婴儿啼哭，会食人。", "category": "凶兽", "volume": "三、北山经", "original": "又北三百五十里，曰钩吾之山……有兽焉，其状如羊身人面，其目在腋下，虎齿人爪，其音如婴儿，是食人，名曰狍鸮。", "explain": "饕餮的原型，贪婪凶残的食人异兽，眼睛长在腋下，牙尖爪利，极度贪吃，是上古贪欲的象征。"}, {"name": "䖪鼠", "pinyin": "zī shǔ", "point": "栖息栒状山，鸡形长鼠毛，出现则当地大旱。", "category": "凶兽", "volume": "四、东山经", "original": "有鸟焉，其状如鸡而鼠毛，其名曰䖪鼠，见则其邑大旱。", "explain": "一种长鼠毛的奇鸟，是旱灾的预兆，它现身的地区往往久旱无雨。"}, {"name": "䃚䃚", "pinyin": "tiáo tiáo", "point": "栖息末涂水，黄蛇形长鱼鳍，出入水面发光，出现则当地大旱。", "category": "凶兽", "volume": "四、东山经", "original": "又南三百里，曰独山，其上多金玉，其下多美石。末涂之水出焉，而东南流注于沔，其中多䃚䃚，其状如黄蛇，鱼翼，出入有光，见则其邑大旱。", "explain": "一种长鱼鳍的黄蛇，能在水中快速游动，出水时身体发光，是干旱的凶兆。"}, {"name": "犰狳", "pinyin": "qiú yú", "point": "栖息馀峨山，兔形鸟嘴鹰眼蛇尾，见人就装死，出现则爆发蝗灾。", "category": "凶兽", "volume": "四、东山经", "original": "又南三百八十里，曰馀峨之山……有兽焉，其状如菟而鸟喙，鸱目蛇尾，见人则眠，名曰犰狳，其鸣自詨，见则螽蝗为败。", "explain": "一种会装死的异兽，兔身鸟嘴，是蝗灾的预兆，它出现的地方会爆发蝗灾、庄稼被毁。"}, {"name": "朱獳", "pinyin": "zhū rù", "point": "栖息耿山，狐形长鱼鳍，水陆两栖，出现则国家发生恐慌。", "category": "凶兽", "volume": "四、东山经", "original": "又南三百里，曰耿山，无草木，多水碧，多大蛇。有兽焉，其状如狐而鱼翼，其名曰朱獳，其鸣自詨，见则其国有恐。", "explain": "一种长鱼鳍的狐形异兽，水陆两栖，它的出现预示着社会动荡、人心惶惶。"}, {"name": "獙獙", "pinyin": "bì bì", "point": "栖息姑逢山，狐形生翅膀，叫声如大雁，出现则天下大旱。", "category": "凶兽", "volume": "四、东山经", "original": "又南三百里，曰姑逢之山，无草木，多金玉。有兽焉，其状如狐而有翼，其音如鸿雁，其名曰獙獙，见则天下大旱。", "explain": "会飞的旱兽，狐身双翼，鸣声如雁，它一旦出现就会引发天下大旱，是极端干旱的凶兆。"}, {"name": "蠪侄", "pinyin": "lóng zhì", "point": "栖息凫丽山，狐形九尾九首虎爪，叫声如婴儿啼哭，会食人。", "category": "凶兽", "volume": "四、东山经", "original": "又南五百里，曰凫丽之山……有兽焉，其状如狐，而九尾、九首、虎爪，名曰蠪侄，其音如婴儿，是食人。", "explain": "极其凶残的九尾九首凶兽，狐身虎爪，擅长用婴儿哭声诱捕猎物，是东方山林中最危险的食人异兽。"}, {"name": "峳峳", "pinyin": "yōu yōu", "point": "栖息䃌山，马形羊目四角牛尾，叫声如狗吠，出现则国家多奸诈之徒。", "category": "凶兽", "volume": "四、东山经", "original": "又南五百里，曰䃌山……有兽焉，其状如马，而羊目、四角、牛尾，其音如獆狗，其名曰峳峳，见则其国多狡客。", "explain": "四角马形异兽，是奸佞当道的预兆，它出现的地方，朝堂民间都会充斥狡诈虚伪之人。"}, {"name": "絜钩", "pinyin": "xié gōu", "point": "栖息䃌山，凫形鼠尾，善爬树，出现则国家多瘟疫。", "category": "凶兽", "volume": "四、东山经", "original": "有鸟焉，其状如凫而鼠尾，善登木，其名曰絜钩，见则其国多疫。", "explain": "一种擅长爬树的怪鸟，鼠尾鸭身，是瘟疫的凶兆，它出现的地区会爆发大规模疫病。"}, {"name": "猲狙", "pinyin": "gé jū", "point": "栖息北号山，狼形红首鼠目，叫声如小猪，会食人。", "category": "凶兽", "volume": "四、东山经", "original": "东次四经之首，曰北号之山，临于北海。有兽焉，其状如狼，赤首鼠目，其音如豚，名曰猲狙，是食人。", "explain": "凶残的食人狼兽，红首鼠目，性情贪婪，是东方北海边的顶级掠食者。"}, {"name": "鬿雀", "pinyin": "qí què", "point": "栖息北号山，鸡形白首，鼠足虎爪，性情凶猛会食人。", "category": "凶兽", "volume": "四、东山经", "original": "有鸟焉，其状如鸡而白首，鼠足而虎爪，其名曰鬿雀，亦食人。", "explain": "凶猛的食人猛禽，虽然外形像鸡，但爪牙锋利，能捕食人类，是极具危险性的凶鸟。"}, {"name": "䱻鱼（东山经版）", "pinyin": "huá yú", "point": "栖息子桐水，鱼身鸟翼，出入发光，叫声如鸳鸯，出现则天下大旱。", "category": "凶兽", "volume": "二、西山经", "original": "又西三百七十里，曰乐游之山。桃水出焉，西流注于稷泽，是多白玉，其中多䱻鱼，其状如蛇而四足，是食鱼。", "explain": "一种蛇身四足的怪鱼，外形像原始的两栖动物，是水泽中的肉食性异兽。"}, {"name": "合窳", "pinyin": "hé yǔ", "point": "栖息剡山，猪形人面黄身赤尾，叫声如婴儿啼哭，食人也食虫蛇，出现则天下大水。", "category": "凶兽", "volume": "四、东山经", "original": "又东北二百里，曰剡山……有兽焉，其状如彘而人面，黄身而赤尾，其名曰合窳，其音如婴儿。是兽也，食人，亦食虫蛇，见则天下大水。", "explain": "人面猪身的凶兽，既吃人也吃蛇虫，是洪水的凶兆，它一出现就会引发天下洪涝。"}, {"name": "蜚", "pinyin": "fěi", "point": "栖息太山，牛形白首一目蛇尾，所过之处水竭草枯，出现则天下大瘟疫。", "category": "凶兽", "volume": "四、东山经", "original": "又东二百六十里，曰太山，上多金玉、桢木。有兽焉，其状如牛而白首，一目而蛇尾，其名曰蜚，行水则竭，行草则死，见则天下大疫。", "explain": "上古灾厄之兽，所到之处万物凋零、水源枯竭，它的出现预示着天下将爆发毁灭性的大瘟疫。"}, {"name": "㺢㹢", "pinyin": "yí jiā", "point": "栖息鲜山，大狗形，红嘴红眼白尾，出现则当地发生火灾。", "category": "凶兽", "volume": "五、中山经", "original": "又西一百五十里，曰鲜山……有兽焉，其状如膜大，赤喙、赤目、白尾，见则其邑有火，名曰㺢㹢。", "explain": "一种预兆火灾的犬形异兽，红目白尾，它现身的地方容易爆发火情，是火兆凶兽。"}, {"name": "马腹", "pinyin": "mǎ fù", "point": "栖息蔓渠山，人面虎身，叫声如婴儿啼哭，会食人。", "category": "凶兽", "volume": "五、中山经", "original": "又西二百里，曰蔓渠之山……有兽焉，其名曰马腹，其状如人面虎身，其音如婴儿，是食人。", "explain": "人面虎身的食人凶兽，外形类似陆吾但更凶暴，擅长用婴儿哭声引诱人类靠近捕食。"}, {"name": "夫诸", "pinyin": "fū zhū", "point": "栖息敖岸山，白鹿形四角，出现则当地发大水。", "category": "凶兽", "volume": "五、中山经", "original": "中次三经萯山之首，曰敖岸之山……有兽焉，其状如白鹿而四角，名曰夫诸，见则其邑大水。", "explain": "四角白鹿，是洪水的预兆，它踏过的地方都会涌出水流，出现则预示着当地将有洪涝灾害。"}, {"name": "犀渠", "pinyin": "xī qú", "point": "栖息厘山，牛形苍身，叫声如婴儿啼哭，会食人。", "category": "凶兽", "volume": "五、中山经", "original": "又西一百二十里，曰厘山……有兽焉，其状如牛。苍身，其音如婴儿，是食人，其名曰犀渠。", "explain": "青黑色的牛形食人凶兽，体型庞大、性情凶暴，是中原山林中的危险巨兽。"}, {"name": "𤞹狼", "pinyin": "shì láng", "point": "栖息蛇山，狐形白尾长耳，出现则国家爆发战争。", "category": "凶兽", "volume": "五、中山经", "original": "又东北一百四十里，曰蛇山……有兽焉，其状如狐，而白尾长耳，名𤞹狼，见则国内有兵。", "explain": "白尾长耳的狐形异兽，是兵灾的预兆，它出现的地方会爆发战乱、刀兵四起。"}, {"name": "雍和", "pinyin": "yōng hé", "point": "栖息丰山，猿形赤目赤喙黄身，出现则国家发生大恐慌。", "category": "凶兽", "volume": "五、中山经", "original": "又东南三十里，曰丰山……有兽焉，其状如蝯，赤目、赤喙、黄身，名曰雍和，见则国有大恐。", "explain": "黄色的猿形异兽，红眼红嘴，它的出现预示着国家将发生令人极度恐慌的灾变事件。"}, {"name": "闻獜", "pinyin": "wén lìn", "point": "栖息几山，猪形黄身白头白尾，出现则天下刮大风。", "category": "凶兽", "volume": "五、中山经", "original": "又东南一百三十里，曰几山……有兽焉，其状如彘，黄身、白头、白尾，名曰闻獜，见则天下大风。", "explain": "黄身白头的猪形异兽，是大风的预兆，它一出现就会狂风大作、飞沙走石。"}, {"name": "凿齿", "pinyin": "záo chǐ", "point": "人形异兽，齿如长凿，持盾戈作乱，被后羿射杀于寿华野。", "category": "凶兽", "volume": "六、海外四经", "original": "羿与凿齿战于寿华之野，羿射杀之。在昆仑虚东。凿齿持盾。一曰戈。", "explain": "上古凶兽，牙齿如凿般锋利，是原始部落的半人半兽凶神，因作乱人间被后羿诛杀。"}, {"name": "相柳", "pinyin": "xiāng liǔ", "point": "共工之臣，蛇身九头，所到之处化为沼泽，毒液所及寸草不生。", "category": "凶兽", "volume": "六、海外四经", "original": "共工之臣曰相柳氏，九首，以食于九山。相柳之所抵，厥为泽溪。", "explain": "九头蛇身的巨凶，共工手下的头号凶兽，身躯庞大，九颗头分别吃九座山的食物，所过之处尽成沼泽，毒液能毁灭万物。"}, {"name": "蜪犬", "pinyin": "táo quǎn", "point": "青色食人恶犬，吃人从头部开始啃食。", "category": "凶兽", "volume": "七、海内四经", "original": "蜪犬如犬，青，食人从首始。", "explain": "青色的食人恶犬，性情凶残，吃人先啃头部，是北方荒野中的危险凶兽。"}, {"name": "穷奇（海内版）", "pinyin": "qióng qí", "point": "虎身有翼，会飞行，食人从头部开始。", "category": "凶兽", "volume": "二、西山经", "original": "穷奇状如虎，有翼，食人从首始。所食被发，在蜪犬北。一曰从足。", "explain": "穷奇的另一版本形象，虎身有翼能飞，比西山经版本更具飞行能力，同样是食人凶兽。"}, {"name": "女妭", "pinyin": "nǚ bá", "point": "黄帝之女，旱神，衣青衣，能止风雨，所居之地终年干旱。", "category": "凶兽", "volume": "八、大荒四经", "original": "有人衣青衣，名曰黄帝女妭。蚩尤作兵伐黄帝，黄帝乃令应龙攻之冀州之野。应龙畜水。蚩尤请风伯雨师，纵大风雨。黄帝乃下天女曰妭，雨止，遂杀蚩尤。妭不得复上，所居不雨。", "explain": "上古旱神，又称旱魃，天生能驱散风雨，助黄帝战胜蚩尤后流落人间，所到之处滴雨不下，是旱灾的化身。"}, {"name": "青鴍、黄鷔", "pinyin": "qīng wén、huáng áo", "point": "五色人面鸟，成群聚集则国家灭亡。", "category": "凶兽", "volume": "八、大荒四经", "original": "玄丹之山。有五色之鸟，人面有发。爰有青鴍、黄鷔、青鸟、黄鸟，其所集者其国亡。", "explain": "亡国之鸟，人面有发，五彩羽毛，是国破家亡的凶兆，它们成群落下的地方，国家必然覆灭。"}, {"name": "巴蛇", "pinyin": "bā shé", "point": "南方巨蛇，能吞食整头大象，三年才吐出骨头。", "category": "凶兽", "volume": "七、海内四经", "original": "巴蛇食象，三岁而出其骨，君子服之，无心腹之疾。其为蛇青黄赤黑。一曰黑蛇青首，在犀牛西。", "explain": "上古巨蛇，体型大到能吞食整头大象，其骨其肉都有药用价值，是南方水域的巨兽。"}, {"name": "狌狌", "pinyin": "xīng xīng", "point": "栖息招摇山，形似白耳猿猴，可直立行走，食其肉能提升行走耐力。", "category": "异兽", "volume": "一、南山经", "original": "南山之首曰䧿山。其首曰招摇之山，临于西海之上……有兽焉，其状如禺而白耳，伏行人走，其名曰狌狌，食之善走。", "explain": "一种神异白耳猿猴，能模仿人直立行走，是上古传说中“知往事”的灵长类异兽，其肉被认为有增强脚力的功效。"}, {"name": "鯥", "pinyin": "lù", "point": "栖息柢山，鱼身牛形，生蛇尾与翅膀，冬季蛰伏、春天复苏。", "category": "异兽", "volume": "一、南山经", "original": "又东三百里，曰柢山，多水，无草木。有鱼焉，其状如牛，陵居，蛇尾有翼，其羽在魼下，其音如留牛，其名曰鯥，冬死而复生，食之无肿疾。", "explain": "一种兼具鱼、牛、蛇特征的怪鱼，能在陆地栖息，有冬眠习性，在上古被当作消肿解毒的药用异兽。"}, {"name": "瞿如", "pinyin": "qú rú", "point": "栖息祷过山，形似䴔鸟，白首三足人面，叫声是自己的名字。", "category": "异兽", "volume": "一、南山经", "original": "东五百里，曰祷过之山，其上多金玉，其下多犀、兕，多象。有鸟焉，其状如䴔而白首，三足，人面，其名曰瞿如，其鸣自号也。", "explain": "一种人面三足的奇鸟，外形奇特，叫声如同呼喊自己的名字，是南方山林中辨识度极高的异禽。"}, {"name": "䍺", "pinyin": "huàn", "point": "栖息洵山，形似羊，无嘴巴，无需进食也不会死亡。", "category": "异兽", "volume": "一、南山经", "original": "又东四百里，曰洵山，其阳多金，其阴多玉。有兽焉，其状如羊而无口，不可杀也，其名曰䍺。", "explain": "一种神奇的不死羊，没有嘴却不会饿死，象征着“无为自存”的上古生态意象，是生命力极强的异兽。"}, {"name": "葱聋", "pinyin": "cōng lóng", "point": "栖息符禺山，形似羊，长红色鬃毛，叫声是自己的名字。", "category": "异兽", "volume": "二、西山经", "original": "又西八十里，曰符禺之山，其阳多铜，其阴多铁。有兽焉，其状如羊而赤鬣，名曰葱聋，其鸣自詨也。", "explain": "一种红鬃野羊，外形与普通羊相似但鬃毛赤红，是西方山地的特有异兽。"}, {"name": "嚣", "pinyin": "xiāo", "point": "栖息羭次山，长臂猿形，擅长投掷攻击。", "category": "异兽", "volume": "二、西山经", "original": "又西七十里，曰羭次之山……有兽焉，其状如禺而长臂，善投，其名曰嚣。", "explain": "一种长臂猿类异兽，臂力惊人，擅长投石攻击，是西方山林中敏捷凶猛的灵长类动物。"}, {"name": "玃如", "pinyin": "jué rú", "point": "栖息皋涂山，鹿形白尾，马足人手，长四只角。", "category": "异兽", "volume": "二、西山经", "original": "又西三百五十里，曰皋涂之山……有兽焉，其状如鹿而白尾，马足人手而四角，名曰玃如。", "explain": "形态奇特的鹿形异兽，兼具鹿、马、人的特征，长四只角，行动灵活，是西方深山里的稀有灵兽。"}, {"name": "举父", "pinyin": "jǔ fù", "point": "栖息崇吾山，猿形臂有斑纹、爪如虎豹，擅长精准投石。", "category": "异兽", "volume": "二、西山经", "original": "西次三经之首，曰崇吾之山，在河之南……有兽焉，其状如禺而文臂，豹虎而善投，名曰举父。", "explain": "一种力大无穷的猿形异兽，手臂带斑纹、爪如虎豹，能精准投掷石块攻击敌人，是山中的“投石高手”。"}, {"name": "蛮蛮", "pinyin": "mán mán", "point": "栖息崇吾山，形似野鸭，一翼一目，需两只并排才能飞翔。", "category": "异兽", "volume": "二、西山经", "original": "有鸟焉，其状如凫，而一翼一目，相得乃飞，名曰蛮蛮，见则天下大水。", "explain": "比翼鸟的原型，单只无法飞行，需两两配对才能翱翔，但它是洪水的凶兆，成群出现则预示洪涝灾害。"}, {"name": "烛阴", "pinyin": "zhú yīn", "point": "钟山山神，人面蛇身赤红，身长千里，睁眼为昼、闭眼为夜，掌控四季与风。", "category": "异兽", "volume": "二、西山经", "original": "钟山之神，名曰烛阴，视为昼，瞑为夜，吹为冬，呼为夏，不饮，不食，不息，息为风。身长千里。在无䏿之东。其为物，人面，蛇身，赤色，居钟山下。", "explain": "上古创世级神兽，又称烛龙，掌控昼夜四季，是北方钟山的主宰，身躯绵延千里，是《山海经》中体型最庞大的神兽之一。"}, {"name": "𤛔", "pinyin": "bàng", "point": "栖息槐江山，形似牛，青黑身躯、眼睛巨大。", "category": "异兽", "volume": "二、西山经", "original": "有兽焉，其状如牛，而苍黑大目，名曰𤛔。", "explain": "一种体型庞大的黑牛，眼睛巨大，生活在天帝园圃附近，是守护神山的异兽。"}, {"name": "鹑鸟", "pinyin": "chún niǎo", "point": "栖息昆仑山，负责管理天帝的服饰器具。", "category": "异兽", "volume": "二、西山经", "original": "有鸟焉，其名曰鹑鸟，是司帝之百服。", "explain": "天界的御用神鸟，专门打理天帝的各类服饰、器物，是昆仑神域中司职内务的灵禽。"}, {"name": "䱻鱼（西山经版）", "pinyin": "huá yú", "point": "栖息桃水，蛇身四足，以鱼类为食。", "category": "异兽", "volume": "二、西山经", "original": "又西三百七十里，曰乐游之山。桃水出焉，西流注于稷泽，是多白玉，其中多䱻鱼，其状如蛇而四足，是食鱼。", "explain": "一种蛇身四足的怪鱼，外形像原始的两栖动物，是水泽中的肉食性异兽。"}, {"name": "西王母", "pinyin": "xī wáng mǔ", "point": "居玉山，人形豹尾虎齿，善啸，蓬头戴玉饰，掌管天灾、刑罚与杀戮。", "category": "异兽", "volume": "二、西山经", "original": "又西三百五十里，曰玉山，是西王母所居也。西王母其状如人，豹尾虎齿而善啸，蓬发戴胜，是司天之厉及五残。", "explain": "上古西方的至尊女神，外形半人半兽，主掌灾异与刑杀，是威严的天界司法神，后世逐渐演变为王母娘娘的形象。"}, {"name": "狰", "pinyin": "zhēng", "point": "栖息章莪山，赤豹形，五尾一角，叫声如敲击石头。", "category": "异兽", "volume": "二、西山经", "original": "又西二百八十里，曰章莪之山，无草木，多瑶碧。有兽焉，其状如赤豹，五尾一角，其音如击石，其名曰狰。", "explain": "威猛的山中异兽，赤红色皮毛，五尾独角，叫声清脆如金石相击，是西方深山里的顶级掠食者。"}, {"name": "三青鸟", "pinyin": "sān qīng niǎo", "point": "栖息三危山，通体青色，为西王母取食送信。", "category": "异兽", "volume": "二、西山经", "original": "又西二百二十里，曰三危之山，三青鸟居之。", "explain": "西王母的信使，通体青色，负责为西王母寻觅食物、传递消息，是连接神域与人间的灵禽。"}, {"name": "帝江", "pinyin": "dì jiāng", "point": "天山之神，形如黄囊、红如丹火，六足四翼，无面目，通晓歌舞。", "category": "异兽", "volume": "二、西山经", "original": "又西三百五十里，曰天山，多金玉，有青雄黄。有神焉，其状如黄囊，赤如丹火，六足四翼，浑敦无面目，是识歌舞，实为帝江也。", "explain": "又称混沌，上古中央之神，外形混沌一团没有五官，却天生通晓歌舞，是“混沌初开”意象的神兽代表。"}, {"name": "神𩳁", "pinyin": "shén kuí", "point": "栖息刚山，人面兽身，一手一足，叫声如人呻吟。", "category": "异兽", "volume": "二、西山经", "original": "又西百二十里，曰刚山，多柒木，多㻬琈之玉。是多神𩳁，其状人面兽身，一足一手，其音如钦。", "explain": "刚山的山精，外形怪异，只有一手一足，叫声低沉如呻吟，是西方山林中的精怪。"}, {"name": "孟极", "pinyin": "mèng jí", "point": "栖息石者山，豹形白身，额头有花纹，擅长潜伏隐藏。", "category": "异兽", "volume": "三、北山经", "original": "又北二百八十里，曰石者之山……有兽焉，其状如豹，而文题白身，名曰孟极，是善伏，其鸣自呼。", "explain": "白色皮毛的豹形异兽，极擅长伪装伏击，是北方山林中最擅长潜行的猎手。"}, {"name": "幽鴳", "pinyin": "yōu yàn", "point": "栖息边春山，猿形身有花纹，善发笑，见人就假装躺下。", "category": "异兽", "volume": "三、北山经", "original": "又北百一十里，曰边春之山……有兽焉，其状如禺而文身，善笑，见人则卧，名曰幽鴳，其鸣自呼。", "explain": "一种狡黠的猿类异兽，身上带斑纹，会用假睡迷惑人类，性格顽皮爱戏弄人。"}, {"name": "足訾", "pinyin": "zú zī", "point": "栖息蔓联山，猿形有鬃毛，牛尾纹臂马蹄，见人就呼喊。", "category": "异兽", "volume": "三、北山经", "original": "又北百八十里，曰蔓联之山……有兽焉，其状如禺而有鬣，牛尾、文臂、马蹏，见人则呼，名曰足訾，其鸣自呼。", "explain": "形态混杂的猿形异兽，兼具牛、马的特征，性格好奇，见到人就会大声叫唤。"}, {"name": "鵁", "pinyin": "jiāo", "point": "栖息蔓联山，群居群飞，羽毛如雌雉。", "category": "异兽", "volume": "三、北山经", "original": "有鸟焉，群居而朋飞，其毛如雌雉，名曰鵁，其鸣自呼，食之已风。", "explain": "一种群居的飞禽，外形像雌性野鸡，成群活动，其肉有治疗风痹、中风的药用价值。"}, {"name": "诸犍", "pinyin": "zhū jiān", "point": "栖息单张山，豹形长尾，人头牛耳独眼，善吼叫，行走时衔住尾巴。", "category": "异兽", "volume": "三、北山经", "original": "又北百八十里，曰单张之山……有兽焉，其状如豹而长尾，人首而牛耳，一目，名曰诸犍，善吒，行则衔其尾，居则蟠其尾。", "explain": "凶悍的独眼异兽，豹身人头，吼声震天，行动时会叼住自己的尾巴，警惕性极高，是山中霸主。"}, {"name": "𩣡马", "pinyin": "bó mǎ", "point": "栖息旄水，白身牛尾独角，叫声如人呼喊。", "category": "异兽", "volume": "三、北山经", "original": "又北三百五十里，曰敦头之山，其上多金玉，无草木。旄水出焉，而东流注于印泽。其中多𩣡马，牛尾而白身，一角，其音如呼。", "explain": "一种独角水马，生活在北方水泽中，外形像白身牛尾的独角兽，鸣声洪亮。"}, {"name": "䮝", "pinyin": "huī", "point": "栖息归山，羊形四角马尾，脚上有距，擅长旋转跳跃。", "category": "异兽", "volume": "三、北山经", "original": "北次三经之首，曰归山……有兽焉，其状如羊而四角，马尾而有距，其名曰䮝，善还，其名自詨。", "explain": "敏捷的羊形异兽，四角马尾，脚上有距，行动灵活，擅长原地打转，是北方山地的特有异兽。"}, {"name": "䴅", "pinyin": "bēn", "point": "栖息归山，鹊形白身赤尾六足，生性极易受惊。", "category": "异兽", "volume": "三、北山经", "original": "有鸟焉，其状如鹊，白身、赤尾、六足，其名曰䴅，是善惊，其鸣自詨。", "explain": "一种六足奇鸟，反应极快、生性警觉，稍有动静就会惊飞，是山林中最机敏的禽鸟。"}, {"name": "天马", "pinyin": "tiān mǎ", "point": "栖息马成山，白犬形黑头，见人就飞起，行动迅捷如飞。", "category": "异兽", "volume": "三、北山经", "original": "又东北二百里，曰马成之山……有兽焉，其状如白犬而黑头，见人则飞，其名曰天马，其鸣自詨。", "explain": "会飞的犬形异兽，行动迅捷如飞，是上古“天马”形象的早期原型，寓意迅捷、超凡。"}, {"name": "飞鼠", "pinyin": "fēi shǔ", "point": "栖息天池山，兔形鼠首，靠背部翼膜滑翔飞行。", "category": "异兽", "volume": "三、北山经", "original": "又东北二百里，曰天池之山，其上无草木，多文石。有兽焉，其状如兔而鼠首，以其背飞，其名曰飞鼠。", "explain": "上古鼯鼠的神异化形象，兔头鼠身，靠翼膜滑翔，是山林中会飞的小型异兽。"}, {"name": "象蛇", "pinyin": "xiàng shé", "point": "栖息阳山，雌雉形身披五彩纹，雌雄同体可自行繁殖。", "category": "异兽", "volume": "三、北山经", "original": "有鸟焉，其状如雌雉，而五采以文，是自为牝牡，名曰象蛇，其鸣自詨。", "explain": "五彩斑斓的自孕之鸟，无需配偶即可繁殖，羽毛华丽，是北方山中的珍稀异禽。"}, {"name": "精卫", "pinyin": "jīng wèi", "point": "栖息发鸠山，乌形花首白喙赤足，传为炎帝之女溺水所化，衔石填海。", "category": "异兽", "volume": "三、北山经", "original": "又北二百里，曰发鸠之山，其上多柘木。有鸟焉，其状如乌，文首、白喙、赤足，名曰精卫，其鸣自詨。是炎帝之少女，名曰女娃。女娃游于东海，溺而不返，故为精卫，常衔西山之木石，以堙于东海。", "explain": "上古著名的誓鸟，由溺水而亡的少女所化，日复一日衔木石填海，象征着坚韧不拔、不屈不挠的精神。"}, {"name": "罴九", "pinyin": "pí jiǔ", "point": "栖息伦山，麋形，肛门长在尾巴上。", "category": "异兽", "volume": "三、北山经", "original": "又北五百里，曰伦山……有兽焉，其状如麋，其川在尾上，其名曰罴九。", "explain": "一种形态怪异的麋鹿类异兽，生理结构奇特，是北方荒野中的稀有兽类。"}, {"name": "长蛇", "pinyin": "cháng shé", "point": "栖息錞于毋逢山，蛇身粗如牛，青黑色，叫声如婴儿啼哭。", "category": "异兽", "volume": "三、北山经", "original": "又北五百里，曰錞于毋逢之山……有蛇焉，其状如牛，而苍身，其音如婴儿，是食人，名曰长蛇。", "explain": "体型巨大的食人巨蛇，身躯粗壮如牛，性情凶残，是北方深山中的顶级掠食者。"}, {"name": "从从", "pinyin": "cóng cóng", "point": "栖息栒状山，犬形六足，行动迅捷。", "category": "异兽", "volume": "四、东山经", "original": "东山经之首，曰樕𧉬之山……又南三百里，曰栒状之山……有兽焉，其状如犬，六足，其名曰从从，其鸣自詨。", "explain": "一种六足怪狗，行动比普通犬类更迅捷，是东方山林中外形奇特的异兽。"}, {"name": "骄虫", "pinyin": "jiāo chóng", "point": "平逢山之神，人形二首，是所有蜇人昆虫的首领，统领蜂类。", "category": "异兽", "volume": "五、中山经", "original": "中次六经缟羝山之首，曰平逢之山……有神焉，其状如人而二首，名曰骄虫，是为螫虫，实惟蜂蜜之庐。", "explain": "蜂群之神，双头人形，是天下蜂类的主宰，祭祀它可避免蜂蜇、获得蜂蜜丰收。"}, {"name": "山膏", "pinyin": "shān gāo", "point": "栖息苦山，猪形红如丹火，叫声如人责骂。", "category": "异兽", "volume": "五、中山经", "original": "又东二十七里，曰苦山……有兽焉，名曰山膏，其状如逐，赤若丹火，善詈。", "explain": "一种火红色的小猪，性情乖戾，会发出像人责骂一样的叫声，是山中出了名的“嘴臭”异兽。"}, {"name": "文文", "pinyin": "wén wén", "point": "栖息大𡽗山，蜂形枝尾反舌，擅长呼喊。", "category": "异兽", "volume": "五、中山经", "original": "又东五十二里，曰大𡽗之山……有兽焉，其状如蜂，枝尾而反舌，善呼，其名曰文文。", "explain": "一种蜂形异兽，尾巴分叉、舌头反向，喜欢发出呼喊声，是中原山林中奇特的昆虫类异兽。"}, {"name": "厌火国人", "pinyin": "yàn huǒ guó rén", "point": "兽身黑色，能从口中喷出火焰。", "category": "异兽", "volume": "六、海外四经", "original": "厌火国在其南，兽身黑色，生火出其口中。", "explain": "南方的异人种族，兽身黑肤，天生能口吐火焰，是最早的“喷火民族”形象。"}, {"name": "羽民国人", "pinyin": "yǔ mín guó rén", "point": "长头身生羽翼，可在空中飞翔。", "category": "异兽", "volume": "六、海外四经", "original": "羽民国在其东南，其为人长头，身生羽。", "explain": "南方的羽人种族，头型修长，身生羽翼，可在空中飞行，是上古羽人的原型。"}, {"name": "灭蒙鸟", "pinyin": "miè méng niǎo", "point": "青色羽毛红色尾巴的巨型异鸟。", "category": "异兽", "volume": "六、海外四经", "original": "灭蒙鸟在结匈国北，为鸟青，赤尾。", "explain": "西方的巨型异鸟，青羽红尾，体型庞大，是海外西经中标志性的灵禽。"}, {"name": "并封", "pinyin": "bìng fēng", "point": "猪形，前后各长一个脑袋，全身黑色。", "category": "异兽", "volume": "六、海外四经", "original": "并封在巫咸东，其状如彘，前后皆有首，黑。", "explain": "双头猪形异兽，前后各有一个头，行动进退自如，是西方巫咸国附近的神兽。"}, {"name": "刑天", "pinyin": "xíng tiān", "point": "与天帝争神被砍头，以乳为目、以脐为口，持干戚战斗不息。", "category": "异兽", "volume": "六、海外四经", "original": "形天与帝至此争神，帝断其首，葬之常羊之山。乃以乳为目，以脐为口，操干戚以舞。", "explain": "上古不屈战神，被砍头后仍战斗不止，象征永不屈服的抗争精神，是最具斗志的神性生物。"}, {"name": "夸父", "pinyin": "kuā fù", "point": "巨人族，立志追赶太阳，渴死途中，手杖化为邓林。", "category": "异兽", "volume": "六、海外四经", "original": "夸父与日逐走，入日。渴欲得饮，饮于河渭，河渭不足，北饮大泽。未至，道渴而死。弃其杖，化为邓林。", "explain": "上古巨人族，立志追逐太阳，象征着人类征服自然的宏大志向与不屈精神。"}, {"name": "奢比尸", "pinyin": "shē bǐ shī", "point": "海神，兽身人面大耳，耳上挂两条青蛇。", "category": "异兽", "volume": "六、海外四经", "original": "奢比之尸在其北，兽身、人面、大耳，珥两青蛇。", "explain": "上古海神，半人半兽，以蛇为饰，是东方海外的神秘尸神，拥有操控海洋的力量。"}, {"name": "天吴", "pinyin": "tiān wú", "point": "水伯，八首人面八足八尾，青黄色虎身，掌控水流。", "category": "异兽", "volume": "六、海外四经", "original": "朝阳之谷，神曰天吴，是为水伯。在𧈫𧈫北两水间。其为兽也，八首人面，八足八尾，皆青黄。", "explain": "上古水伯，八首八足八尾的虎形水神，是江河湖海的主宰，能呼风唤雨、操控水流。"}, {"name": "枭阳", "pinyin": "xiāo yáng", "point": "南方山精，人面长唇黑身有毛，脚跟朝前，见人就笑。", "category": "异兽", "volume": "七、海内四经", "original": "枭阳国在北朐之西。其为人人面长唇，黑身有毛，反踵，见人笑亦笑，左手操管。", "explain": "南方的巨人山精，外形像人但浑身黑毛，会模仿人笑，是上古传说中的“山魈”原型。"}, {"name": "氐人", "pinyin": "dī rén", "point": "人鱼种族，人面鱼身无足，为炎帝后裔。", "category": "异兽", "volume": "七、海内四经", "original": "氐人国在建木西，其为人人面而鱼身，无足。", "explain": "人鱼种族，上半身是人、下半身是鱼，生活在西方水域，是炎帝后裔的一支。"}, {"name": "视肉", "pinyin": "shì ròu", "point": "肉团形异兽，形如牛肝有双目，食用后可再生，取之不尽。", "category": "异兽", "volume": "七、海内四经", "original": "开明北有视肉、珠树、文玉树、玗琪树、不死树。", "explain": "上古不死异兽，外形是一团肉，食用后能迅速复原，取之不尽用之不竭，是传说中的“无限食物”。"}, {"name": "雷神", "pinyin": "léi shén", "point": "雷泽之神，龙身人头，拍打腹部就会响起雷声。", "category": "异兽", "volume": "七、海内四经", "original": "雷泽中有雷神，龙身而人头，鼓其腹。在吴西。", "explain": "上古雷神，龙首人身，居住在雷泽中，腹部一鼓就发出雷声，是雷电力量的主宰。"}, {"name": "禺猇", "pinyin": "yù xiāo", "point": "东海海神，人面鸟身，耳挂黄蛇、脚踩黄蛇。", "category": "异兽", "volume": "八、大荒四经", "original": "东海之渚中，有神，人面鸟身，珥两黄蛇，践两黄蛇，名曰禺猇。", "explain": "东海之神，鸟身人面，以蛇为配饰，是东方海域的最高神祇，统领东海万物。"}, {"name": "夔", "pinyin": "kuí", "point": "栖息流波山，牛形苍身无角独足，出入水伴风雨，声如雷鸣。", "category": "异兽", "volume": "八、大荒四经", "original": "东海中有流波山，入海七千里。其上有兽，状如牛，苍身而无角，一足，出入水则必风雨，其光如日月，其声如雷，其名曰夔。黄帝得之，以其皮为鼓，橛以雷兽之骨，声闻五百里，以威天下。", "explain": "上古独脚神兽，牛身无角，吼声如雷，天生掌控风雨，其皮制成的战鼓威力无穷，能震慑天下，是雷神般的存在。"}, {"name": "䟣踢", "pinyin": "chù tī", "point": "左右各长一个脑袋的异兽，生活在南方流沙地带。", "category": "异兽", "volume": "八、大荒四经", "original": "南海之外，赤水之西，流沙之东，有兽，左右有首，名曰䟣踢。", "explain": "双头怪兽，左右各有一个头，行动可进可退，生活在南方流沙地带。"}, {"name": "双双", "pinyin": "shuāng shuāng", "point": "由三只青色野兽合体而成的共生异兽。", "category": "异兽", "volume": "八、大荒四经", "original": "有三青兽相并，名曰双双。", "explain": "三体共生的奇兽，三只青兽并为一体，是上古共生神兽的代表。"}, {"name": "女娲", "pinyin": "nǚ wā", "point": "创世女神，抟土造人、炼石补天，肠化为十位神人。", "category": "异兽", "volume": "八、大荒四经", "original": "有神十人，名曰女娲之肠，化为神，处栗广之野，横道而处。", "explain": "创世女神，抟土造人、炼石补天，是人类的始祖神，其身体各部分都能化为神灵，神力无边。"}, {"name": "鱼妇", "pinyin": "yú fù", "point": "半边鱼身，颛顼死后附其体复活，由蛇化鱼而成。", "category": "异兽", "volume": "八、大荒四经", "original": "有鱼偏枯，名曰鱼妇，颛顼死即复苏。风道北来，天乃大水泉，蛇乃化为鱼，是为鱼妇。", "explain": "上古死而复生的异鱼，是颛顼灵魂的寄托之所，蛇化为鱼，承载帝王之魂，是生死转化的象征。"}, {"name": "禺彊", "pinyin": "yù qiáng", "point": "北海海神兼风神，人面鸟身，耳挂青蛇、脚踩赤蛇。", "category": "异兽", "volume": "八、大荒四经", "original": "北海之渚中，有神，人面鸟身，珥两青蛇，践两赤蛇，名曰禺彊。", "explain": "北海之神，同时也是风神，鸟身人面，掌控北风与北海，是北方海域的最高神祇。"}, {"name": "九凤", "pinyin": "jiǔ fèng", "point": "北极天柜山神，九首人面鸟身。", "category": "异兽", "volume": "八、大荒四经", "original": "大荒之中，有山名曰北极天柜，海水北注焉。有神，九首人面鸟身，名曰九凤。", "explain": "上古北方神鸟，九首人面，是楚地凤凰的原型，象征着至高的神性与祥瑞。"}, {"name": "强良", "pinyin": "qiáng liáng", "point": "虎首人身四蹄长臂，口叼手抓毒蛇，力大无穷。", "category": "异兽", "volume": "八、大荒四经", "original": "又有神衔蛇衔操蛇，其状虎首人身，四蹄长肘，名曰强良。", "explain": "上古凶兽神，虎首人身，以蛇为食，力大无穷，是北方山野中的凶悍神祇。"}, {"name": "烛龙", "pinyin": "zhú lóng", "point": "章尾山神，人面蛇身赤红，睁眼为昼闭眼为夜，能照亮九幽阴暗。", "category": "异兽", "volume": "八、大荒四经", "original": "西北海之外，赤水之北，有章尾山。有神，人面蛇身而赤，直目正乘，其瞑乃晦，其视乃明，不食不寝不息，风雨是谒。是烛九阴，是谓烛龙。", "explain": "即烛阴，创世级巨龙，掌控昼夜与光明，身躯绵延千里，能照亮地下最深处的黑暗，是北方幽冥的主宰。"}, {"name": "韩流", "pinyin": "hán liú", "point": "颛顼之父，长头小耳人面猪嘴，麟身并腿猪脚。", "category": "异兽", "volume": "九、海内经", "original": "黄帝妻雷祖，生昌意。昌意降处若水，生韩流。韩流擢首、谨耳、人面、豕喙、麟身、渠股、豚止，取淖子曰阿女，生帝颛顼。", "explain": "上古神性人物，外形半人半兽，兼具猪、麒麟的特征，是颛顼帝的生父，出身黄帝血脉。"}, {"name": "翳鸟", "pinyin": "yì niǎo", "point": "五彩巨鸟，展翅能遮蔽一乡之地。", "category": "异兽", "volume": "九、海内经", "original": "北海之内，有蛇山者，蛇水出焉，东入于海。有五采之鸟，飞蔽一乡，名曰翳鸟。", "explain": "体型极其庞大的五彩神鸟，翅膀展开能遮蔽一乡之地，是北海边的巨型灵禽。"}, {"name": "钉灵国人", "pinyin": "dīng líng guó rén", "point": "膝下长毛，脚如马蹄，天生擅长极速奔跑。", "category": "异兽", "volume": "九、海内经", "original": "有钉灵之国，其民从厀以下有毛，马蹄善走。", "explain": "北方的异人种族，腿上长毛、脚如马蹄，天生擅长极速奔跑，是半人半马的游牧种族。"}]};
+const C = {瑞兽:'var(--rui)',凶兽:'var(--xiong)',异兽:'var(--yi)'};
+const CHEX = {瑞兽:'#2e8b6f',凶兽:'#c0392b',异兽:'#2e6f95'};
+
+// stats
+document.getElementById('s-entries').textContent = DATA.total_entries;
+document.getElementById('s-beasts').innerHTML = DATA.total_beasts + '<small> 只</small>';
+document.getElementById('s-rui').textContent = DATA.categories['瑞兽'];
+document.getElementById('s-xiong').textContent = DATA.categories['凶兽'];
+document.getElementById('s-yi').textContent = DATA.categories['异兽'];
+document.getElementById('lg-rui').textContent = DATA.categories['瑞兽'];
+document.getElementById('lg-xiong').textContent = DATA.categories['凶兽'];
+document.getElementById('lg-yi').textContent = DATA.categories['异兽'];
+
+// volume select
+const volSel = document.getElementById('volSel');
+DATA.volumes.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name+'（'+v.count+'）';volSel.appendChild(o);});
+
+// ---- bar chart ----
+(function(){
+  const vs = DATA.volumes;
+  const W=520,H=260,padL=10,padB=42,padT=18;
+  const max=Math.max(...vs.map(v=>v.count));
+  const bw=(W-padL*2)/vs.length*0.62, gap=(W-padL*2)/vs.length;
+  let s=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
+  vs.forEach((v,i)=>{
+    const x=padL+gap*i+(gap-bw)/2, h=(H-padB-padT)*v.count/max, y=H-padB-h;
+    s+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${CHEX['异兽']}" opacity="0.85"/>`;
+    s+=`<text class="bar-val" x="${(x+bw/2).toFixed(1)}" y="${(y-5).toFixed(1)}" text-anchor="middle">${v.count}</text>`;
+    const short=v.name.replace('一、','').replace('（','\n（');
+    short.split('\n').forEach((t,k)=>{
+      s+=`<text class="bar-lab" x="${(x+bw/2).toFixed(1)}" y="${(H-padB+14+k*13).toFixed(1)}" text-anchor="middle">${t}</text>`;
+    });
+  });
+  // baseline
+  s+=`<line x1="${padL}" y1="${H-padB}" x2="${W-padL}" y2="${H-padB}" stroke="#d8cdb4"/>`;
+  s+=`</svg>`;
+  document.getElementById('barChart').innerHTML=s;
+})();
+
+// ---- donut ----
+(function(){
+  const cs=[['瑞兽',DATA.categories['瑞兽']],['凶兽',DATA.categories['凶兽']],['异兽',DATA.categories['异兽']]];
+  const total=cs.reduce((a,b)=>a+b[1],0);
+  const cx=130,cy=130,r=92,sw=34;
+  let ang=-Math.PI/2;
+  let s=`<svg viewBox="0 0 260 260"><g transform="translate(${cx},${cy})">`;
+  cs.forEach(([k,v])=>{
+    const a2=ang+v/total*Math.PI*2;
+    const large=(a2-ang)>Math.PI?1:0;
+    const x1=Math.cos(ang)*r,y1=Math.sin(ang)*r,x2=Math.cos(a2)*r,y2=Math.sin(a2)*r;
+    s+=`<path d="M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}" fill="none" stroke="${CHEX[k]}" stroke-width="${sw}" stroke-linecap="butt"/>`;
+    ang=a2;
+  });
+  s+=`<text x="0" y="-6" text-anchor="middle" style="font-size:30px;font-weight:800;fill:#2b2620">${total}</text>`;
+  s+=`<text x="0" y="20" text-anchor="middle" style="font-size:13px;fill:#5b5247">神兽条目</text>`;
+  s+=`</g></svg>`;
+  document.getElementById('donutChart').innerHTML=s;
+})();
+
+// ---- cards & filter ----
+const grid=document.getElementById('grid');
+const countLine=document.getElementById('countLine');
+let cur={cat:'全部',vol:'',q:''};
+
+function render(){
+  let list=DATA.beasts.filter(b=>{
+    if(cur.cat!=='全部'&&b.category!==cur.cat)return false;
+    if(cur.vol&&b.volume!==cur.vol)return false;
+    if(cur.q){const q=cur.q.toLowerCase();
+      if(!(b.name.includes(cur.q)||b.pinyin.toLowerCase().includes(q)||b.point.toLowerCase().includes(q)||(b.explain||'').toLowerCase().includes(q)))return false;}
+    return true;
+  });
+  grid.innerHTML='';
+  list.forEach(b=>{
+    const c=CHEX[b.category];
+    const el=document.createElement('div');
+    el.className='card';el.style.setProperty('--c',c);
+    el.innerHTML=`<span class="tag">${b.category}</span>
+      <div class="nm serif">${b.name}</div>
+      <div class="py">${b.pinyin}</div>
+      <div class="pt">${b.point}</div>`;
+    el.onclick=()=>openModal(b);
+    grid.appendChild(el);
+  });
+  countLine.innerHTML=`当前显示 <b>${list.length}</b> 只神兽`+
+    (cur.cat!=='全部'?` · ${cur.cat}`:'')+(cur.vol?` · ${cur.vol}`:'')+(cur.q?` · 关键词「${cur.q}」`:'');
+}
+
+function openModal(b){
+  const c=CHEX[b.category];
+  const m=document.getElementById('modal');
+  m.style.setProperty('--c',c);
+  m.innerHTML=`<button class="close" onclick="closeModal()">×</button>
+    <div class="mh">
+      <div class="nm serif">${b.name}</div>
+      <div class="py">${b.pinyin}</div>
+      <div><span class="tag2">${b.category}</span>${b.volume?`<span class="vol">${b.volume}</span>`:''}</div>
+    </div>
+    <div class="mb">
+      <div class="row"><div class="k">原典要点</div><div class="v">${b.point}</div></div>
+      ${b.original?`<div class="row"><div class="k">原文描述</div><div class="v ori">${b.original}</div></div>`:''}
+      ${b.explain?`<div class="row"><div class="k">通俗解释</div><div class="v">${b.explain}</div></div>`:''}
+    </div>`;
+  document.getElementById('mask').classList.add('show');
+}
+function closeModal(){document.getElementById('mask').classList.remove('show');}
+document.getElementById('mask').onclick=e=>{if(e.target.id==='mask')closeModal();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+document.getElementById('tabs').onclick=e=>{
+  const t=e.target.closest('.tab');if(!t)return;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');cur.cat=t.dataset.c;render();
+};
+volSel.onchange=e=>{cur.vol=e.target.value;render();};
+document.getElementById('q').oninput=e=>{cur.q=e.target.value.trim();render();};
+
+render();
+</script>
+</body>
+</html>
