@@ -4,7 +4,8 @@
 
 ## 预览
 
-部署完成后在此补充 Vercel 链接。
+- Vercel：https://shanhaijing-beasts-visualization.vercel.app
+- GitHub：https://github.com/ZSLPZDZH/shanhaijing-beasts-visualization
 
 ## 本地查看
 
