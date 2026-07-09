@@ -10,6 +10,7 @@
 - `山海经神兽可视化.html`：原始中文命名版本，保留作源文件备份。
 - `README.md`：项目说明、预览与部署信息。
 - `docs/`：项目计划、记录与后续文档。
+- `.env.local`、`.vercel/`：Vercel 本地元数据，只能留在本机，不能提交。
 
 ## 开发约定
 
@@ -27,12 +28,24 @@ python -m http.server 4173
 # Git 状态
 git status --short --branch
 
-# Vercel 生产部署
-npx vercel --prod --yes
+# 线上 HTTP 验证
+curl.exe -L -s -o NUL -w "%{http_code}" "https://shanhaijing-beasts-visualization.vercel.app"
 ```
 
 ## 部署
 
-- GitHub 仓库：`shanhaijing-beasts-visualization`
-- Vercel：通过 GitHub 仓库或 Vercel CLI 部署。
-- 部署后在 `README.md` 填入线上 URL。
+- GitHub 仓库：`https://github.com/ZSLPZDZH/shanhaijing-beasts-visualization`
+- Vercel 生产站点：`https://shanhaijing-beasts-visualization.vercel.app`
+- 飞书交付报告：`https://ecnurcfxtmqo.feishu.cn/wiki/VwQuwMaCii6d2fkbqvWcwbTDnle`
+
+优先通过 GitHub push 触发 Vercel 自动部署。需要手动部署时，必须显式指定项目目录：
+
+```powershell
+npx vercel --cwd "E:\Project\《山海经》神兽可视化图谱" --prod --yes
+```
+
+## 红线
+
+- 不要在 `C:\Users\LPZ` 等非项目目录运行 `git init`。
+- 不要接受 Vercel CLI 的 `deploying your home directory` 提示。
+- 不要提交 `.env.local`、`.vercel/` 或任何 token。

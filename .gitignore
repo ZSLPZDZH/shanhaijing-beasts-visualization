@@ -13,6 +13,3 @@ Thumbs.db
 
 # Logs
 *.log
-
-.vercel
-.env*
