@@ -18,6 +18,8 @@
 - Preserve: `CLAUDE.md` — 保留当前未提交修改，不纳入本计划的实现提交。
 - Preserve: `docs/manual-github-vercel-update.xml` — 保留当前未跟踪文件及其内容。
 
+> 发布边界：该 XML 是用户持有的本地未跟踪资料；除非另行获得发布授权，不得在 README 等公开文档中将其描述为已提交的仓库路径。
+
 ### Task 1: 保护现有工作并确认基线
 
 **Files:**
@@ -255,7 +257,6 @@ python -m http.server 4173
 ├── CLAUDE.md                                   # 项目开发与部署约定
 └── docs/
     ├── images/project-preview.png              # README 页面预览图
-    ├── manual-github-vercel-update.xml         # 飞书更新手册源 XML
     └── superpowers/                            # 设计与实施记录
 ```
 
@@ -278,7 +279,6 @@ npx vercel --cwd "E:\Project\《山海经》神兽可视化图谱" --prod --yes
 
 - [飞书交付报告](https://ecnurcfxtmqo.feishu.cn/wiki/VwQuwMaCii6d2fkbqvWcwbTDnle)
 - [飞书更新手册](https://ecnurcfxtmqo.feishu.cn/wiki/IMaowmEE0iuzUykSUaMc94pEncb)
-- 本地更新手册源文件：`docs/manual-github-vercel-update.xml`
 
 ## 许可证与内容说明
 
