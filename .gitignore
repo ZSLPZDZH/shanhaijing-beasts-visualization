@@ -11,5 +11,8 @@ Thumbs.db
 # Vercel local metadata
 .vercel/
 
+# Local maintenance source imported to Feishu; do not publish
+docs/manual-github-vercel-update.xml
+
 # Logs
 *.log
