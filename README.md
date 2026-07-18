@@ -60,19 +60,20 @@ python -m http.server 4173
 ├── 山海经神兽可视化.html                        # 原始中文命名版本
 ├── README.md                                   # 项目介绍
 ├── LICENSE                                     # 原创代码的 MIT License
-├── CLAUDE.md                                   # 项目开发与部署约定
+├── AGENTS.md                                   # Codex 项目规则入口
+├── CLAUDE.md                                   # 跨 Agent 共享的开发与部署规范
 └── docs/
-    ├── images/project-preview.png              # README 页面预览图
-    └── superpowers/                            # 设计与实施记录
+    └── images/project-preview.png              # README 页面预览图
 ```
 
 ## 部署与维护
 
-项目是无构建步骤的静态站点，Vercel 输出目录为项目根目录。合并到 `main` 后，推送会触发 Vercel 自动部署：
+项目是无构建步骤的静态站点，Vercel 输出目录为项目根目录。改动先提交到独立分支，经 Pull Request 合并到 `main` 后，由 Vercel Git 集成自动触发生产部署；不要直接在 `main` 上提交或推送：
 
 ```powershell
 git status --short --branch
-git push origin main
+git push -u origin <branch-name>
+gh pr create --base main --head <branch-name>
 ```
 
 需要手动部署时，必须显式指定项目目录：
